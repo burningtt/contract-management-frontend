@@ -4,6 +4,7 @@ import Dashboard from '../views/Dashboard.vue'
 import InstitutionList from '../views/InstitutionList.vue'
 import ContractQuery from '../views/ContractQuery.vue'
 import ContractFeeList from '../views/ContractFeeList.vue'
+import ReportExport from '../views/ReportExport.vue'
 
 const routes = [
   {
@@ -39,6 +40,12 @@ const routes = [
         name: 'ContractFeeList',
         component: ContractFeeList,
         meta: { title: '费用管理' }
+      },
+      {
+        path: 'report-export',
+        name: 'ReportExport',
+        component: ReportExport,
+        meta: { title: '报表导出' }
       }
     ]
   }

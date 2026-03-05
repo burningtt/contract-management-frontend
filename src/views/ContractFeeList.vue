@@ -4,6 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>费用管理</span>
+          <el-button type="primary" @click="handleAddFee" :disabled="!selectedRow">录入费用</el-button>
         </div>
       </template>
 
@@ -16,8 +17,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="年度">
-            <el-select v-model="searchForm.year" placeholder="请选择年度" clearable style="width: 120px">
-              <el-option label="全部" value="" />
+            <el-select v-model="searchForm.year" placeholder="请选择年度" style="width: 120px">
               <el-option v-for="year in yearOptions" :key="year" :label="year + '年'" :value="year" />
             </el-select>
           </el-form-item>
@@ -37,7 +37,14 @@
       </div>
 
       <div v-loading="loading" class="table-container">
-        <el-table :data="feeList" border stripe resizable :show-overflow-tooltip="true">
+        <el-table :data="feeList" border stripe resizable :show-overflow-tooltip="true" @row-click="handleRowClick">
+          <el-table-column label="选择" width="60" align="center">
+            <template #default="scope">
+              <el-radio v-model="selectedRow" :label="scope.row" @click.stop>
+                <span style="visibility: hidden">x</span>
+              </el-radio>
+            </template>
+          </el-table-column>
           <el-table-column prop="institutionNo" label="机构编号" width="120" min-width="120" align="center" />
           <el-table-column prop="institutionName" label="机构名称" min-width="180" align="center" show-overflow-tooltip />
           <el-table-column prop="region" label="地区" width="100" min-width="100" align="center">
@@ -89,6 +96,59 @@
         />
       </div>
     </el-card>
+
+    <el-dialog v-model="dialogVisible" title="录入费用" width="600px">
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+        <el-form-item label="机构编号" prop="institutionNo">
+          <el-input v-model="form.institutionNo" readonly />
+        </el-form-item>
+        <el-form-item label="机构名称" prop="institutionName">
+          <el-input v-model="form.institutionName" readonly />
+        </el-form-item>
+        <el-form-item label="地区" prop="region">
+          <el-input v-model="form.region" readonly />
+        </el-form-item>
+        <el-form-item label="年度应缴" prop="annualDue">
+          <el-input v-model="form.annualDue" readonly />
+        </el-form-item>
+        <el-form-item label="费用金额" prop="feeAmount">
+          <el-input-number 
+            v-model="form.feeAmount" 
+            :min="0.01" 
+            :max="9999999.99" 
+            :precision="2" 
+            style="width: 100%" 
+          />
+        </el-form-item>
+        <el-form-item label="缴费日期" prop="feeDate">
+          <el-date-picker
+            v-model="form.feeDate"
+            type="date"
+            placeholder="请选择日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="录入人" prop="recordedBy">
+          <el-input v-model="form.recordedBy" readonly />
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input 
+            v-model="form.remark" 
+            type="textarea" 
+            :rows="3" 
+            :maxlength="500" 
+            show-word-limit 
+            placeholder="请输入备注信息，最多500个字符"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -109,8 +169,33 @@ export default {
       yearOptions: this.generateYearOptions(),
       searchForm: {
         region: '',
-        year: '',
+        year: new Date().getFullYear(),
         institutionName: ''
+      },
+      selectedRow: null,
+      dialogVisible: false,
+      form: {
+        institutionNo: '',
+        institutionName: '',
+        region: '',
+        annualDue: '',
+        feeAmount: null,
+        feeDate: '',
+        recordedBy: '',
+        remark: '',
+        createTime: ''
+      },
+      rules: {
+        feeAmount: [
+          { required: true, message: '请输入费用金额', trigger: 'blur' },
+          { validator: this.validateFeeAmount, trigger: 'blur' }
+        ],
+        feeDate: [
+          { required: true, message: '请选择缴费日期', trigger: 'change' }
+        ],
+        remark: [
+          { max: 500, message: '备注最多500个字符', trigger: 'blur' }
+        ]
       }
     }
   },
@@ -126,6 +211,46 @@ export default {
         years.push(year)
       }
       return years
+    },
+    validateFeeAmount(rule, value, callback) {
+      if (value === null || value === undefined || value === '') {
+        callback(new Error('请输入费用金额'))
+      } else if (value <= 0) {
+        callback(new Error('费用金额必须大于0'))
+      } else if (value > 9999999.99) {
+        callback(new Error('费用金额不能超过9999999.99'))
+      } else {
+        callback()
+      }
+    },
+    handleRowClick(row) {
+      if (this.selectedRow && this.selectedRow.institutionNo === row.institutionNo) {
+        this.selectedRow = null
+      } else {
+        this.selectedRow = row
+      }
+    },
+    handleAddFee() {
+      if (!this.selectedRow) {
+        this.$message.warning('请先选择一条数据记录')
+        return
+      }
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+      const today = new Date()
+      const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      
+      this.form = {
+        institutionNo: this.selectedRow.institutionNo,
+        institutionName: this.selectedRow.institutionName,
+        region: getRegionName(this.selectedRow.region),
+        annualDue: this.selectedRow.annualDue ? `¥${this.formatAmount(this.selectedRow.annualDue)}` : '¥0.00',
+        feeAmount: null,
+        feeDate: formattedDate,
+        recordedBy: userInfo.realName || userInfo.username || '',
+        remark: '',
+        createTime: new Date().toISOString()
+      }
+      this.dialogVisible = true
     },
     async fetchList() {
       this.loading = true
@@ -146,6 +271,7 @@ export default {
         const res = await request.get('/institutions/fee-statistics', { params })
         this.feeList = res.data?.rows || []
         this.total = res.data?.total || 0
+        this.selectedRow = null
       } catch (error) {
         console.error('获取费用统计列表失败:', error)
         this.$message.error('获取费用统计列表失败')
@@ -160,10 +286,11 @@ export default {
     handleReset() {
       this.searchForm = {
         region: '',
-        year: '',
+        year: new Date().getFullYear(),
         institutionName: ''
       }
       this.currentPage = 1
+      this.selectedRow = null
       this.fetchList()
     },
     handleSizeChange(val) {
@@ -174,6 +301,31 @@ export default {
     handleCurrentChange(val) {
       this.currentPage = val
       this.fetchList()
+    },
+    handleSubmit() {
+      this.$refs.formRef.validate(async (valid) => {
+        if (valid) {
+          try {
+            const submitData = {
+              institutionNo: this.form.institutionNo,
+              feeAmount: this.form.feeAmount,
+              feeDate: this.form.feeDate,
+              recordedBy: this.form.recordedBy,
+              remark: this.form.remark,
+              createTime: this.form.createTime
+            }
+            await request.post('/contract-fees', submitData)
+            this.$message.success('费用录入成功')
+            this.dialogVisible = false
+            this.fetchList()
+          } catch (error) {
+            console.error('费用录入失败:', error)
+            this.$message.error('费用录入失败')
+          }
+        } else {
+          return false
+        }
+      })
     },
     formatAmount(amount) {
       if (amount == null || amount === '') return '0.00'

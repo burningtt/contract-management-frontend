@@ -27,6 +27,10 @@
           <el-icon><Money /></el-icon>
           <span>费用管理</span>
         </el-menu-item>
+        <el-menu-item index="/report-export">
+          <el-icon><Download /></el-icon>
+          <span>报表导出</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
