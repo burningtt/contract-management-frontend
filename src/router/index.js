@@ -4,7 +4,7 @@ import Dashboard from '../views/Dashboard.vue'
 import InstitutionList from '../views/InstitutionList.vue'
 import ContractQuery from '../views/ContractQuery.vue'
 import ContractFeeList from '../views/ContractFeeList.vue'
-import ReportExport from '../views/ReportExport.vue'
+import UserManagement from '../views/UserManagement.vue'
 
 const routes = [
   {
@@ -42,10 +42,10 @@ const routes = [
         meta: { title: '费用管理' }
       },
       {
-        path: 'report-export',
-        name: 'ReportExport',
-        component: ReportExport,
-        meta: { title: '报表导出' }
+        path: 'user-management',
+        name: 'UserManagement',
+        component: UserManagement,
+        meta: { title: '分配用户', requireAdmin: true }
       }
     ]
   }

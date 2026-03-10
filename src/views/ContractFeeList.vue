@@ -79,6 +79,13 @@
               </el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="操作" width="180" min-width="180" align="center" fixed="right">
+            <template #default="scope">
+              <el-button type="primary" size="small" link @click.stop="handleView(scope.row)">查看</el-button>
+              <el-button type="warning" size="small" link @click.stop="handleEdit(scope.row)">编辑</el-button>
+              <el-button type="danger" size="small" link @click.stop="handleDelete(scope.row)">删除</el-button>
+            </template>
+          </el-table-column>
         </el-table>
 
         <el-empty v-if="!loading && feeList.length === 0" description="暂无数据" />
@@ -149,6 +156,79 @@
         <el-button type="primary" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="viewDialogVisible" title="费用明细" width="900px">
+      <div class="view-header">
+        <span>机构编号：{{ viewRow.institutionNo }}</span>
+        <span style="margin-left: 20px;">机构名称：{{ viewRow.institutionName }}</span>
+      </div>
+      <el-table :data="feeDetailList" border stripe v-loading="viewLoading" max-height="400">
+        <el-table-column prop="feeAmount" label="费用金额" width="140" align="center">
+          <template #default="scope">
+            <span class="amount success">¥{{ formatAmount(scope.row.feeAmount) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="feeDate" label="缴费日期" width="120" align="center" />
+        <el-table-column prop="recordedBy" label="录入人" width="100" align="center" />
+        <el-table-column prop="remark" label="备注" min-width="150" align="center" show-overflow-tooltip />
+        <el-table-column prop="createTime" label="创建时间" width="170" align="center">
+          <template #default="scope">
+            {{ formatDateTime(scope.row.createTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" align="center" fixed="right">
+          <template #default="scope">
+            <el-button type="warning" size="small" link @click="handleEditFee(scope.row)">编辑</el-button>
+            <el-button type="danger" size="small" link @click="handleDeleteFee(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="!viewLoading && feeDetailList.length === 0" description="暂无费用记录" />
+    </el-dialog>
+
+    <el-dialog v-model="editDialogVisible" title="编辑费用" width="600px">
+      <el-form :model="editForm" :rules="rules" ref="editFormRef" label-width="100px">
+        <el-form-item label="机构编号" prop="institutionNo">
+          <el-input v-model="editForm.institutionNo" readonly />
+        </el-form-item>
+        <el-form-item label="费用金额" prop="feeAmount">
+          <el-input-number 
+            v-model="editForm.feeAmount" 
+            :min="0.01" 
+            :max="9999999.99" 
+            :precision="2" 
+            style="width: 100%" 
+          />
+        </el-form-item>
+        <el-form-item label="缴费日期" prop="feeDate">
+          <el-date-picker
+            v-model="editForm.feeDate"
+            type="date"
+            placeholder="请选择日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="录入人" prop="recordedBy">
+          <el-input v-model="editForm.recordedBy" readonly />
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input 
+            v-model="editForm.remark" 
+            type="textarea" 
+            :rows="3" 
+            :maxlength="500" 
+            show-word-limit 
+            placeholder="请输入备注信息，最多500个字符"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleEditSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -174,6 +254,11 @@ export default {
       },
       selectedRow: null,
       dialogVisible: false,
+      viewDialogVisible: false,
+      editDialogVisible: false,
+      viewRow: {},
+      feeDetailList: [],
+      viewLoading: false,
       form: {
         institutionNo: '',
         institutionName: '',
@@ -184,6 +269,14 @@ export default {
         recordedBy: '',
         remark: '',
         createTime: ''
+      },
+      editForm: {
+        id: null,
+        institutionNo: '',
+        feeAmount: null,
+        feeDate: '',
+        recordedBy: '',
+        remark: ''
       },
       rules: {
         feeAmount: [
@@ -338,6 +431,90 @@ export default {
       if (rateNum >= 80) return 'primary'
       if (rateNum >= 60) return 'warning'
       return 'danger'
+    },
+    formatDateTime(dateTime) {
+      if (!dateTime) return ''
+      return dateTime.replace('T', ' ').substring(0, 19)
+    },
+    async handleView(row) {
+      this.viewRow = row
+      this.viewDialogVisible = true
+      this.viewLoading = true
+      try {
+        const res = await request.get(`/contract-fees/institution/${row.institutionNo}`)
+        this.feeDetailList = res.data || []
+      } catch (error) {
+        console.error('获取费用明细失败:', error)
+        this.$message.error('获取费用明细失败')
+        this.feeDetailList = []
+      } finally {
+        this.viewLoading = false
+      }
+    },
+    handleEdit(row) {
+      this.handleView(row)
+    },
+    handleEditFee(row) {
+      this.editForm = {
+        id: row.id,
+        institutionNo: this.viewRow.institutionNo,
+        feeAmount: row.feeAmount,
+        feeDate: row.feeDate,
+        recordedBy: row.recordedBy,
+        remark: row.remark || ''
+      }
+      this.editDialogVisible = true
+    },
+    async handleEditSubmit() {
+      this.$refs.editFormRef.validate(async (valid) => {
+        if (valid) {
+          try {
+            await request.put(`/contract-fees/${this.editForm.id}`, this.editForm)
+            this.$message.success('费用修改成功')
+            this.editDialogVisible = false
+            this.handleView(this.viewRow)
+            this.fetchList()
+          } catch (error) {
+            console.error('费用修改失败:', error)
+            this.$message.error('费用修改失败')
+          }
+        } else {
+          return false
+        }
+      })
+    },
+    async handleDelete(row) {
+      this.viewRow = row
+      this.viewDialogVisible = true
+      this.viewLoading = true
+      try {
+        const res = await request.get(`/contract-fees/institution/${row.institutionNo}`)
+        this.feeDetailList = res.data || []
+      } catch (error) {
+        console.error('获取费用明细失败:', error)
+        this.$message.error('获取费用明细失败')
+        this.feeDetailList = []
+      } finally {
+        this.viewLoading = false
+      }
+    },
+    async handleDeleteFee(row) {
+      try {
+        await this.$confirm('确定要删除该费用记录吗？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await request.delete(`/contract-fees/${row.id}`)
+        this.$message.success('删除成功')
+        this.handleView(this.viewRow)
+        this.fetchList()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('删除失败:', error)
+          this.$message.error('删除失败')
+        }
+      }
     }
   }
 }
@@ -379,5 +556,14 @@ export default {
 
 .amount.danger {
   color: #f56c6c;
+}
+
+.view-header {
+  margin-bottom: 15px;
+  padding: 10px 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #606266;
 }
 </style>
