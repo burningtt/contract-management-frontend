@@ -9,7 +9,10 @@
           <el-input v-model="loginForm.username" placeholder="用户名" prefix-icon="User" />
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="loginForm.password" type="password" placeholder="密码" prefix-icon="Lock" />
+          <el-input v-model="loginForm.password" type="password" placeholder="密码" prefix-icon="Lock" show-password />
+        </el-form-item>
+        <el-form-item>
+          <el-checkbox v-model="loginForm.rememberPassword">记住密码</el-checkbox>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%">
@@ -23,6 +26,7 @@
 
 <script>
 import request from '../utils/request'
+import passwordStorage from '../utils/passwordStorage'
 
 export default {
   name: 'Login',
@@ -30,7 +34,8 @@ export default {
     return {
       loginForm: {
         username: '',
-        password: ''
+        password: '',
+        rememberPassword: false
       },
       rules: {
         username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -39,7 +44,18 @@ export default {
       loading: false
     }
   },
+  async mounted() {
+    await this.loadRememberedCredentials()
+  },
   methods: {
+    async loadRememberedCredentials() {
+      const credentials = await passwordStorage.getDecryptedCredentials()
+      if (credentials) {
+        this.loginForm.username = credentials.username
+        this.loginForm.password = credentials.password
+        this.loginForm.rememberPassword = true
+      }
+    },
     handleLogin() {
       this.$refs.loginFormRef.validate(async (valid) => {
         if (valid) {
@@ -48,6 +64,14 @@ export default {
             const res = await request.post('/auth/login', this.loginForm)
             localStorage.setItem('token', res.data.token)
             localStorage.setItem('userInfo', JSON.stringify(res.data))
+            if (this.loginForm.rememberPassword) {
+              await passwordStorage.saveCredentials(
+                this.loginForm.username,
+                this.loginForm.password
+              )
+            } else {
+              passwordStorage.clearCredentials()
+            }
             this.$message.success('登录成功')
             this.$router.push('/')
           } catch (error) {

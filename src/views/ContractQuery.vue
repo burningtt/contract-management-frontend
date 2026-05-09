@@ -4,7 +4,10 @@
       <template #header>
         <div class="card-header">
           <span>机构合同</span>
-          <el-button type="primary" @click="handleAddContract" :disabled="!selectedRow">新增合同</el-button>
+          <div class="header-buttons">
+            <el-button type="success" @click="showImportDialog = true">导入机构</el-button>
+            <el-button type="primary" @click="handleAddContract" :disabled="!selectedRow">新增合同</el-button>
+          </div>
         </div>
       </template>
 
@@ -265,15 +268,25 @@
         <el-button type="danger" @click="handleConfirmDelete" :loading="deleteLoading">删除</el-button>
       </template>
     </el-dialog>
+
+    <!-- 导入机构对话框 -->
+    <InstitutionImportDialog
+      v-model="showImportDialog"
+      @success="handleImportSuccess"
+    />
   </div>
 </template>
 
 <script>
 import request from '../utils/request'
 import { REGION_OPTIONS, getRegionName, REGION_MAP } from '../utils/region'
+import InstitutionImportDialog from '../components/InstitutionImportDialog.vue'
 
 export default {
   name: 'ContractQuery',
+  components: {
+    InstitutionImportDialog
+  },
   data() {
     return {
       contractList: [],
@@ -293,6 +306,7 @@ export default {
       dialogVisible: false,
       dialogTitle: '新增合同',
       submitLoading: false,
+      showImportDialog: false,
       contractForm: {
         id: null,
         contractNo: '',
@@ -358,6 +372,9 @@ export default {
     this.fetchList()
   },
   methods: {
+    handleImportSuccess() {
+      this.fetchList()
+    },
     generateYearOptions() {
       const currentYear = new Date().getFullYear()
       const years = []
@@ -430,6 +447,13 @@ export default {
       console.log('handleAddContract - userInfo:', this.userInfo)
       console.log('handleAddContract - realName:', this.userInfo.realName)
       
+      // 获取当前年度
+      const currentYear = new Date().getFullYear()
+      // 签定日期默认为当前年度1月1日
+      const defaultSignDate = `${currentYear}-01-01`
+      // 到期日期默认为当前年度12月31日
+      const defaultExpireDate = `${currentYear}-12-31`
+      
       this.dialogTitle = '新增合同'
       this.contractForm = {
         id: null,
@@ -440,8 +464,8 @@ export default {
         regionName: getRegionName(selectedInstitution.region),
         selectedContractId: null,
         contractList: [],
-        signDate: '',
-        expireDate: '',
+        signDate: defaultSignDate,
+        expireDate: defaultExpireDate,
         contractAmount: null,
         responsiblePerson: this.userInfo.realName || '',
         remark: ''
@@ -753,6 +777,11 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
 }
 
 .search-container {

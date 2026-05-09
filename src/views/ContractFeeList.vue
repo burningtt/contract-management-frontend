@@ -11,14 +11,20 @@
       <div class="search-container">
         <el-form :inline="true" :model="searchForm" class="search-form">
           <el-form-item label="地区">
-            <el-select v-model="searchForm.region" placeholder="请选择地区" clearable style="width: 150px">
+            <el-select v-model="searchForm.region" placeholder="请选择地区" clearable style="width: 150px" @change="handleFilterChange">
               <el-option label="全部" value="" />
               <el-option v-for="item in regionOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="年度">
-            <el-select v-model="searchForm.year" placeholder="请选择年度" style="width: 120px">
+            <el-select v-model="searchForm.year" placeholder="请选择年度" style="width: 120px" @change="handleFilterChange">
               <el-option v-for="year in yearOptions" :key="year" :label="year + '年'" :value="year" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="缴费状态">
+            <el-select v-model="searchForm.paymentStatus" placeholder="请选择缴费状态" clearable style="width: 130px" @change="handleFilterChange">
+              <el-option label="未缴清" value="UNPAID" />
+              <el-option label="已缴清" value="PAID" />
             </el-select>
           </el-form-item>
           <el-form-item label="机构名称">
@@ -79,11 +85,10 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="180" min-width="180" align="center" fixed="right">
+          <el-table-column label="操作" width="120" min-width="120" align="center">
             <template #default="scope">
               <el-button type="primary" size="small" link @click.stop="handleView(scope.row)">查看</el-button>
               <el-button type="warning" size="small" link @click.stop="handleEdit(scope.row)">编辑</el-button>
-              <el-button type="danger" size="small" link @click.stop="handleDelete(scope.row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -250,7 +255,8 @@ export default {
       searchForm: {
         region: '',
         year: new Date().getFullYear(),
-        institutionName: ''
+        institutionName: '',
+        paymentStatus: ''
       },
       selectedRow: null,
       dialogVisible: false,
@@ -361,6 +367,9 @@ export default {
         if (this.searchForm.institutionName) {
           params.institutionName = this.searchForm.institutionName
         }
+        if (this.searchForm.paymentStatus) {
+          params.paymentStatus = this.searchForm.paymentStatus
+        }
         const res = await request.get('/institutions/fee-statistics', { params })
         this.feeList = res.data?.rows || []
         this.total = res.data?.total || 0
@@ -372,6 +381,10 @@ export default {
         this.loading = false
       }
     },
+    handleFilterChange() {
+      this.currentPage = 1
+      this.fetchList()
+    },
     handleSearch() {
       this.currentPage = 1
       this.fetchList()
@@ -380,7 +393,8 @@ export default {
       this.searchForm = {
         region: '',
         year: new Date().getFullYear(),
-        institutionName: ''
+        institutionName: '',
+        paymentStatus: ''
       }
       this.currentPage = 1
       this.selectedRow = null
@@ -482,21 +496,6 @@ export default {
           return false
         }
       })
-    },
-    async handleDelete(row) {
-      this.viewRow = row
-      this.viewDialogVisible = true
-      this.viewLoading = true
-      try {
-        const res = await request.get(`/contract-fees/institution/${row.institutionNo}`)
-        this.feeDetailList = res.data || []
-      } catch (error) {
-        console.error('获取费用明细失败:', error)
-        this.$message.error('获取费用明细失败')
-        this.feeDetailList = []
-      } finally {
-        this.viewLoading = false
-      }
     },
     async handleDeleteFee(row) {
       try {
