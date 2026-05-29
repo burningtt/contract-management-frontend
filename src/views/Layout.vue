@@ -27,6 +27,28 @@
           <el-icon><Money /></el-icon>
           <span>费用管理</span>
         </el-menu-item>
+        <el-sub-menu index="waste">
+          <template #title>
+            <el-icon><FirstAidKit /></el-icon>
+            <span>医废管理</span>
+          </template>
+          <el-menu-item index="/waste/vehicles">
+            <el-icon><Van /></el-icon>
+            <span>车辆管理</span>
+          </el-menu-item>
+          <el-menu-item index="/waste/staff">
+            <el-icon><User /></el-icon>
+            <span>车队人员管理</span>
+          </el-menu-item>
+          <el-menu-item index="/waste/hospital">
+            <el-icon><EditPen /></el-icon>
+            <span>医废录入</span>
+          </el-menu-item>
+          <el-menu-item index="/waste/query">
+            <el-icon><Search /></el-icon>
+            <span>医废查询</span>
+          </el-menu-item>
+        </el-sub-menu>
         <el-menu-item index="/user-management" v-if="isAdmin">
           <el-icon><UserFilled /></el-icon>
           <span>分配用户</span>
@@ -129,7 +151,7 @@
 </template>
 
 <script>
-import { HomeFilled, OfficeBuilding, Search, Money, User, UserFilled, ArrowDown, Lock, Key } from '@element-plus/icons-vue'
+import { HomeFilled, OfficeBuilding, Search, Money, User, UserFilled, ArrowDown, Lock, Key, FirstAidKit, Van, EditPen } from '@element-plus/icons-vue'
 import request from '../utils/request'
 
 export default {
@@ -143,7 +165,10 @@ export default {
     UserFilled,
     ArrowDown,
     Lock,
-    Key
+    Key,
+    FirstAidKit,
+    Van,
+    EditPen
   },
   computed: {
     activeMenu() {

@@ -177,7 +177,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="viewDialogVisible" title="查看合同详情" width="500px" class="view-dialog">
+    <el-dialog v-model="viewDialogVisible" title="查看合同详情" width="700px" class="view-dialog">
       <el-form :model="viewForm" label-width="100px">
         <el-form-item label="机构编号">
           <el-input v-model="viewForm.institutionNo" readonly />
@@ -218,6 +218,13 @@
           <div class="remark-content">
             {{ viewForm.remark || '无备注信息' }}
           </div>
+        </el-form-item>
+        <el-form-item label="合同附件">
+          <ContractAttachment
+            v-if="viewForm.currentContractNo"
+            :contract-no="viewForm.currentContractNo"
+            :upload-by="userInfo.realName || ''"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -281,11 +288,13 @@
 import request from '../utils/request'
 import { REGION_OPTIONS, getRegionName, REGION_MAP } from '../utils/region'
 import InstitutionImportDialog from '../components/InstitutionImportDialog.vue'
+import ContractAttachment from '../components/ContractAttachment.vue'
 
 export default {
   name: 'ContractQuery',
   components: {
-    InstitutionImportDialog
+    InstitutionImportDialog,
+    ContractAttachment
   },
   data() {
     return {
@@ -333,6 +342,7 @@ export default {
         institutionNo: '',
         selectedContractId: null,
         contractList: [],
+        currentContractNo: '',
         regionName: '',
         contractAmount: null,
         contractAmountDisplay: '',
@@ -534,6 +544,7 @@ export default {
         institutionNo: row.institutionNo,
         selectedContractId: null,
         contractList: [],
+        currentContractNo: '',
         regionName: getRegionName(row.region),
         contractAmount: null,
         contractAmountDisplay: '',
@@ -567,6 +578,7 @@ export default {
     updateViewFormContract() {
       const contract = this.viewForm.contractList.find(c => c.id === this.viewForm.selectedContractId)
       if (contract) {
+        this.viewForm.currentContractNo = contract.contractNo
         this.viewForm.contractAmount = contract.contractAmount
         this.viewForm.contractAmountDisplay = this.formatAmountNumber(contract.contractAmount)
         this.viewForm.signDate = this.formatDate(contract.signDate)
