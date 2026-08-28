@@ -4,7 +4,10 @@
       <template #header>
         <div class="card-header">
           <span>机构列表</span>
-          <el-button type="primary" @click="handleAdd">新增机构</el-button>
+          <div class="header-buttons">
+            <el-button type="success" @click="showImportDialog = true">导入机构</el-button>
+            <el-button type="primary" @click="handleAdd">新增机构</el-button>
+          </div>
         </div>
       </template>
 
@@ -150,15 +153,25 @@
         <el-button type="primary" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 导入机构对话框 -->
+    <InstitutionImportDialog
+      v-model="showImportDialog"
+      @success="handleImportSuccess"
+    />
   </div>
 </template>
 
 <script>
 import request from '../utils/request'
 import { REGION_OPTIONS, getRegionName, getRegionCode } from '../utils/region'
+import InstitutionImportDialog from '../components/InstitutionImportDialog.vue'
 
 export default {
   name: 'InstitutionList',
+  components: {
+    InstitutionImportDialog
+  },
   data() {
     return {
       institutionList: [],
@@ -174,6 +187,7 @@ export default {
       },
       dialogVisible: false,
       dialogTitle: '新增机构',
+      showImportDialog: false,
       form: {
         id: null,
         institutionName: '',
@@ -200,6 +214,9 @@ export default {
     this.fetchList()
   },
   methods: {
+    handleImportSuccess() {
+      this.fetchList()
+    },
     async fetchList() {
       try {
         let url = '/institutions'

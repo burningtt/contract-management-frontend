@@ -1,0 +1,46 @@
+# Nginx配置文件示例
+# 将此文件保存为 /etc/nginx/conf.d/contract-management.conf (Linux)
+# 或 nginx/conf.d/contract-management.conf (Windows)
+
+server {
+    listen 80;
+    server_name 43.142.255.169;  # 你的服务器IP地址
+
+    # 前端静态文件
+    location / {
+        root /usr/share/nginx/html/contract-management;  # 前端dist文件存放目录
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;  # 支持Vue Router的history模式
+    }
+
+    # API代理配置
+    location /api {
+        proxy_pass http://43.142.255.169:8081;  # 后端API地址
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 文件上传大小限制
+        client_max_body_size 50m;
+
+        # 超时设置
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+    }
+
+    # 静态资源缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        root /usr/share/nginx/html/contract-management;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # 错误页面
+    error_page 404 /index.html;
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
+}

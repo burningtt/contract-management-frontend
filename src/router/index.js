@@ -14,7 +14,8 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: { title: '登录', public: true }
   },
   {
     path: '/',
@@ -25,57 +26,62 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: Dashboard,
-        meta: { title: '首页' }
+        meta: { title: '首页', requiresAuth: true }
       },
       {
         path: 'institutions',
         name: 'InstitutionList',
         component: InstitutionList,
-        meta: { title: '机构管理' }
+        meta: { title: '机构管理', requiresAuth: true }
       },
       {
         path: 'contract-query',
         name: 'ContractQuery',
         component: ContractQuery,
-        meta: { title: '机构合同' }
+        meta: { title: '机构合同', requiresAuth: true }
       },
       {
         path: 'contract-fees',
         name: 'ContractFeeList',
         component: ContractFeeList,
-        meta: { title: '费用管理' }
+        meta: { title: '费用管理', requiresAuth: true }
       },
       {
         path: 'waste/vehicles',
         name: 'WasteVehicleList',
         component: WasteVehicleList,
-        meta: { title: '车辆管理' }
+        meta: { title: '车辆管理', requiresAuth: true }
       },
       {
         path: 'waste/staff',
         name: 'WasteStaffList',
         component: WasteStaffList,
-        meta: { title: '车队人员管理' }
+        meta: { title: '车队人员管理', requiresAuth: true }
       },
       {
         path: 'waste/hospital',
         name: 'WasteHospitalList',
         component: WasteHospitalList,
-        meta: { title: '医废录入' }
+        meta: { title: '医废录入', requiresAuth: true }
       },
       {
         path: 'waste/query',
         name: 'WasteQueryList',
         component: WasteQueryList,
-        meta: { title: '医废查询' }
+        meta: { title: '医废查询', requiresAuth: true }
       },
       {
         path: 'user-management',
         name: 'UserManagement',
         component: UserManagement,
-        meta: { title: '分配用户', requireAdmin: true }
+        meta: { title: '分配用户', requiresAuth: true, requireAdmin: true }
       }
     ]
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    redirect: '/dashboard'
   }
 ]
 

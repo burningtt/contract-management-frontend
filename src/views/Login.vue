@@ -73,7 +73,9 @@ export default {
               passwordStorage.clearCredentials()
             }
             this.$message.success('登录成功')
-            this.$router.push('/')
+            // 登录成功后回跳到守卫记录的原始目标页
+            const redirect = this.$route.query.redirect
+            this.$router.push(typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/')
           } catch (error) {
             console.error('登录失败:', error)
           } finally {

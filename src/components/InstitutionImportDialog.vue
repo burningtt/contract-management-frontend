@@ -51,15 +51,27 @@
           <el-collapse>
             <el-collapse-item title="数据格式要求" name="format">
               <ul>
-                <li><strong>地区</strong>：必填，如：汉滨区、旬阳市等</li>
-                <li><strong>机构名称</strong>：必填，不能与已有机构重复</li>
+                <li><strong>地区</strong>：必填，填写区域代码或中文名称（如 XFQ 或 忻府区），见下方代码表</li>
+                <li><strong>机构名称</strong>：必填，不能与已有机构重复，模板示例行不会被导入</li>
                 <li><strong>联系电话</strong>：选填，格式如：0915-1234567 或 13800138000</li>
-                <li><strong>机构类型</strong>：选填，如：综合医院、专科医院等</li>
+                <li><strong>机构类型</strong>：选填，填写类别代码或中文名称（如 HOSPITAL 或 医院），见下方代码表</li>
                 <li><strong>联系人</strong>：选填</li>
                 <li><strong>实际床位</strong>：选填，必须为非负整数</li>
                 <li><strong>开放床位</strong>：选填，必须为非负整数</li>
                 <li><strong>备注</strong>：选填</li>
               </ul>
+            </el-collapse-item>
+            <el-collapse-item title="各县市区域代码表" name="region">
+              <el-table :data="regionTableData" border size="small" max-height="220">
+                <el-table-column prop="code" label="区域代码" width="120" align="center" />
+                <el-table-column prop="name" label="区域名称" align="center" />
+              </el-table>
+            </el-collapse-item>
+            <el-collapse-item title="医疗机构类别代码表" name="type">
+              <el-table :data="typeTableData" border size="small" max-height="220">
+                <el-table-column prop="code" label="类别代码" width="150" align="center" />
+                <el-table-column prop="name" label="类别名称" align="center" />
+              </el-table>
             </el-collapse-item>
           </el-collapse>
         </div>
@@ -171,6 +183,19 @@
 <script>
 import { UploadFilled, Download } from '@element-plus/icons-vue'
 import request from '../utils/request'
+import { REGION_OPTIONS } from '../utils/region'
+
+// 医疗机构类别代码表（与后端、机构管理页面保持一致）
+const INSTITUTION_TYPE_TABLE = [
+  { code: 'HOSPITAL', name: '医院' },
+  { code: 'CLINIC', name: '诊所' },
+  { code: 'COMMUNITY', name: '社区卫生服务中心' },
+  { code: 'PHARMACY', name: '药店' },
+  { code: 'LABORATORY', name: '检验中心' },
+  { code: 'HEALTH_CENTER', name: '卫生院' },
+  { code: 'HEALTH_STATION', name: '卫生所' },
+  { code: 'OTHER', name: '其他' }
+]
 
 export default {
   name: 'InstitutionImportDialog',
@@ -205,7 +230,11 @@ export default {
         successCount: 0,
         failCount: 0,
         errors: []
-      }
+      },
+      // 区域代码表数据（由 region.js 统一提供）
+      regionTableData: REGION_OPTIONS.map(item => ({ code: item.value, name: item.label })),
+      // 机构类别代码表数据
+      typeTableData: INSTITUTION_TYPE_TABLE
     }
   },
   computed: {
@@ -362,18 +391,11 @@ export default {
     },
     async downloadTemplate() {
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('/api/institutions/import/template', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        // 使用统一的 axios 实例请求，自动携带 token，以 blob 接收文件流
+        const response = await request.get('/institutions/import/template', {
+          responseType: 'blob'
         })
-        if (!response.ok) {
-          throw new Error('下载失败')
-        }
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
+        const url = window.URL.createObjectURL(response.data)
         const link = document.createElement('a')
         link.href = url
         link.download = 'institution_import_template.xlsx'
